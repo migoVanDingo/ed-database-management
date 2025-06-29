@@ -1,9 +1,25 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from app.db.init_db import init_db
+from platform_common.config.settings import get_settings
 
-from app.api.controller.health_check import router as health_router
-from strawberry.fastapi import GraphQLRouter
 
-app = FastAPI(title="Core Service")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    print(f"databaseURL: {settings.database_url}")
+    # Startup logic
+    await init_db()
 
-# REST endpoints
-app.include_router(health_router, prefix="/health", tags=["Health"])
+    yield  # The app runs here
+
+    # Shutdown logic (optional)
+    # e.g., close connections or cleanup resources
+
+
+app = FastAPI(title="ed-database-management", lifespan=lifespan)
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
