@@ -15,7 +15,6 @@ from platform_common.models.file import File
 from platform_common.models.generated_file import GeneratedFile
 from platform_common.models.organization_member import OrganizationMember
 from platform_common.models.organization import Organization
-from platform_common.models.project_collaborator import ProjectCollaborator
 from platform_common.models.project_dataset_link import ProjectDatasetLink
 from platform_common.models.project import Project
 from platform_common.models.role import Role
@@ -36,7 +35,6 @@ __all__ = [
     "GeneratedFile",
     "OrganizationMember",
     "Organization",
-    "ProjectCollaborator",
     "ProjectDatasetLink",
     "Project",
     "Role",
@@ -70,7 +68,6 @@ async def init_db():
             GeneratedFile,
             OrganizationMember,
             Organization,
-            ProjectCollaborator,
             ProjectDatasetLink,
             Project,
             Role,
