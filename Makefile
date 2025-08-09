@@ -44,5 +44,14 @@ format:
 	$(ACTIVATE) && $(BLACK) .
 	$(ACTIVATE) && $(ISORT) .
 
+migrate:
+	docker-compose exec ed-database-management alembic upgrade head
+
+makemigration:
+	docker-compose exec ed-database-management alembic revision -m "$(name)"
+
+
 clean:
 	rm -rf $(VENV) __pycache__ .pytest_cache .mypy_cache
+
+

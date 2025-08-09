@@ -1,8 +1,9 @@
 from platform_common.pubsub import RedisPublisher, PubSubEvent
 from platform_common.utils.enums import EventType
 from app.core.config import settings
+from platform_common.pubsub.factory import get_publisher
 
-publisher = RedisPublisher(redis_url=settings.REDIS_URL)
+publisher = get_publisher()
 
 
 async def publish_task_event(event_type: EventType, payload: dict):

@@ -1,4 +1,5 @@
 import asyncio
+import subprocess
 from typing import List, Type
 from sqlmodel import SQLModel
 from platform_common.db.engine import get_engine  # adjust the import if needed
@@ -20,6 +21,9 @@ from platform_common.models.project import Project
 from platform_common.models.role import Role
 from platform_common.models.user_profile import UserProfile
 from platform_common.models.user import User
+from platform_common.models.notification import Notification
+from platform_common.models.user_invite import UserInvite
+from platform_common.models.user_session import UserSession
 
 __all__ = [
     "Annotation",
@@ -40,6 +44,9 @@ __all__ = [
     "Role",
     "UserProfile",
     "User",
+    "Notification",
+    "UserInvite",
+    "UserSession",
 ]
 
 
@@ -73,6 +80,9 @@ async def init_db():
             Role,
             UserProfile,
             User,
+            Notification,
+            UserInvite,
+            UserSession,
         ]
     )
 
@@ -80,6 +90,9 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
         print("Database initialized.")
+
+    subprocess.run(["alembic", "upgrade", "head"], check=True)
+    print("Database migrations applied.")
 
 
 if __name__ == "__main__":
