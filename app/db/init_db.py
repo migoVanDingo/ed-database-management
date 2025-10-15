@@ -24,6 +24,7 @@ from platform_common.models.user import User
 from platform_common.models.notification import Notification
 from platform_common.models.user_invite import UserInvite
 from platform_common.models.user_session import UserSession
+from platform_common.models.upload_session import UploadSession
 
 __all__ = [
     "Annotation",
@@ -47,6 +48,7 @@ __all__ = [
     "Notification",
     "UserInvite",
     "UserSession",
+    "UploadSession",
 ]
 
 
@@ -83,6 +85,7 @@ async def init_db():
             Notification,
             UserInvite,
             UserSession,
+            UploadSession,
         ]
     )
 
