@@ -17,6 +17,7 @@ def _et_or_none(name: str):
 
 def map_user_event(payload: str) -> PubSubEvent:
     p = json.loads(payload)
+    event_name = (p.get("event_name") or "").upper()
     op = (p.get("operation") or "").upper()
 
     # Prefer explicit user events if they exist in your enum
@@ -25,7 +26,7 @@ def map_user_event(payload: str) -> PubSubEvent:
         "UPDATE": "USER_UPDATED",
         "DELETE": "USER_DELETED",
     }
-    desired_name = op_to_name.get(op)
+    desired_name = event_name or op_to_name.get(op)
 
     et = _et_or_none(desired_name) if desired_name else None
     if et is None:
