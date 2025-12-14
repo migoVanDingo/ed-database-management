@@ -11,6 +11,7 @@ from app.debug.debug_subscriber import start_debug_subscriber  # see notes below
 from app.listeners.upload_session_trigger_listener import (
     listen_to_upload_session_changes,
 )
+from app.listeners.file_listener import listen_to_file_status_changes
 
 settings = get_settings()  # single source of truth
 
@@ -30,6 +31,9 @@ async def lifespan(app: FastAPI):
     app.state.user_listener_task = asyncio.create_task(listen_to_user_changes())
     app.state.upload_session_listener_task = asyncio.create_task(
         listen_to_upload_session_changes()
+    )
+    app.state.file_status_listener_task = asyncio.create_task(
+        listen_to_file_status_changes()
     )
 
     # Optional debug subscriber
@@ -51,6 +55,13 @@ async def lifespan(app: FastAPI):
         app.state.upload_session_listener_task.cancel()
         try:
             await app.state.upload_session_listener_task
+        except asyncio.CancelledError:
+            pass
+
+        # file_status listener
+        app.state.file_status_listener_task.cancel()
+        try:
+            await app.state.file_status_listener_task
         except asyncio.CancelledError:
             pass
 
