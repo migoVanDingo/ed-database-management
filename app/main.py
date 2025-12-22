@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from platform_common.config.settings import get_settings
+from platform_common.middleware.request_id_middleware import RequestIDMiddleware
+from platform_common.exception_handling.handlers import add_exception_handlers
 from app.db.init_db import init_db
 from app.db.seed_dev_data import seed_dev_data
 from app.listeners.user_trigger_listener import listen_to_user_changes
@@ -74,6 +76,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ed-database-management", lifespan=lifespan)
+app.add_middleware(RequestIDMiddleware)
+add_exception_handlers(app)
 
 
 @app.get("/health")
