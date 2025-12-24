@@ -16,6 +16,13 @@ from platform_common.models.external_dataset import ExternalDataset
 from platform_common.models.file import File
 from platform_common.models.generated_file import GeneratedFile
 from platform_common.models.label_ontology import LabelOntology
+from platform_common.models.datastore_metrics import DatastoreMetrics
+from platform_common.models.dataset_metrics import DatasetMetrics
+from platform_common.models.project_metrics import ProjectMetrics
+from platform_common.models.datastore_metrics_daily import DatastoreMetricsDaily
+from platform_common.models.dataset_metrics_daily import DatasetMetricsDaily
+from platform_common.models.project_metrics_daily import ProjectMetricsDaily
+from platform_common.models.metrics_processed_event import MetricsProcessedEvent
 from platform_common.models.notification import Notification
 from platform_common.models.organization import Organization
 from platform_common.models.organization_member import OrganizationMember
@@ -42,6 +49,13 @@ __all__ = [
     "File",
     "GeneratedFile",
     "LabelOntology",
+    "DatastoreMetrics",
+    "DatasetMetrics",
+    "ProjectMetrics",
+    "DatastoreMetricsDaily",
+    "DatasetMetricsDaily",
+    "ProjectMetricsDaily",
+    "MetricsProcessedEvent",
     "Notification",
     "OrganizationMember",
     "Organization",
@@ -81,6 +95,13 @@ async def init_db():
             File,
             GeneratedFile,
             LabelOntology,
+            DatastoreMetrics,
+            DatasetMetrics,
+            ProjectMetrics,
+            DatastoreMetricsDaily,
+            DatasetMetricsDaily,
+            ProjectMetricsDaily,
+            MetricsProcessedEvent,
             Notification,
             OrganizationMember,
             Organization,
