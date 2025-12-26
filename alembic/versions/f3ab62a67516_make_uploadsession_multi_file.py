@@ -21,50 +21,98 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade():
     # 1) Add upload_session_id to file
-    op.add_column(
-        "file",
-        sa.Column("upload_session_id", sa.String(), nullable=True),
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'file'
+                  AND column_name = 'upload_session_id'
+            ) THEN
+                ALTER TABLE file ADD COLUMN upload_session_id VARCHAR;
+            END IF;
+        END$$;
+        """
     )
-    op.create_index(
-        "ix_file_upload_session_id",
-        "file",
-        ["upload_session_id"],
-        unique=False,
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_indexes
+                WHERE indexname = 'ix_file_upload_session_id'
+            ) THEN
+                CREATE INDEX ix_file_upload_session_id
+                ON file (upload_session_id);
+            END IF;
+        END$$;
+        """
     )
-    op.create_foreign_key(
-        "fk_file_upload_session_id_upload_session",
-        "file",
-        "upload_session",
-        ["upload_session_id"],
-        ["id"],
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.table_constraints tc
+                WHERE tc.constraint_type = 'FOREIGN KEY'
+                  AND tc.constraint_name = 'fk_file_upload_session_id_upload_session'
+                  AND tc.table_name = 'file'
+            ) THEN
+                ALTER TABLE file
+                ADD CONSTRAINT fk_file_upload_session_id_upload_session
+                FOREIGN KEY (upload_session_id)
+                REFERENCES upload_session (id);
+            END IF;
+        END$$;
+        """
     )
 
     # 2) Backfill upload_session_id on file from old 1:1 mapping
     #    (upload_session.file_id -> file.id)
     op.execute(
         """
-        UPDATE file
-        SET upload_session_id = us.id
-        FROM upload_session AS us
-        WHERE us.file_id = file.id
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'upload_session'
+                  AND column_name = 'file_id'
+            ) THEN
+                UPDATE file
+                SET upload_session_id = us.id
+                FROM upload_session AS us
+                WHERE us.file_id = file.id;
+            END IF;
+        END$$;
         """
     )
 
     # 3) Drop the old 1:1-style columns from upload_session
 
     # Drop FK constraint from upload_session.file_id -> file.id
-    op.drop_constraint(
-        "upload_session_file_id_fkey",
-        "upload_session",
-        type_="foreignkey",
+    op.execute(
+        """
+        ALTER TABLE upload_session
+        DROP CONSTRAINT IF EXISTS upload_session_file_id_fkey;
+        """
     )
 
     # Now drop the columns that made UploadSession 1:1 with File.
-    op.drop_column("upload_session", "file_id")
-    op.drop_column("upload_session", "filename")
-    op.drop_column("upload_session", "content_type")
-    op.drop_column("upload_session", "size_estimate")
-    op.drop_column("upload_session", "object_key")
+    op.execute(
+        """
+        ALTER TABLE upload_session
+        DROP COLUMN IF EXISTS file_id,
+        DROP COLUMN IF EXISTS filename,
+        DROP COLUMN IF EXISTS content_type,
+        DROP COLUMN IF EXISTS size_estimate,
+        DROP COLUMN IF EXISTS object_key;
+        """
+    )
 
 
 def downgrade():

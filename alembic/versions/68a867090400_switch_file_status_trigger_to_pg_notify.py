@@ -5,6 +5,7 @@ Revises: 0970968a4821
 Create Date: 2025-12-14 08:23:35.768866
 
 """
+# Idempotent trigger/function creation to avoid DuplicateObject errors.
 
 from typing import Sequence, Union
 
@@ -52,7 +53,10 @@ def upgrade():
     op.execute(
         """
         DROP TRIGGER IF EXISTS trg_file_status_outbox ON file;
-
+        """
+    )
+    op.execute(
+        """
         CREATE TRIGGER trg_file_status_outbox
         AFTER UPDATE OF status ON file
         FOR EACH ROW
@@ -68,6 +72,5 @@ def downgrade():
     op.execute(
         """
         DROP TRIGGER IF EXISTS trg_file_status_outbox ON file;
-        DROP FUNCTION IF EXISTS file_status_outbox_trigger();
         """
     )

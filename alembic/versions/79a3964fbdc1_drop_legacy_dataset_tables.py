@@ -5,6 +5,7 @@ Revises: 68a867090400
 Create Date: 2025-12-23 10:39:12.206363
 
 """
+# Idempotent table drops to avoid UndefinedTable errors.
 
 from typing import Sequence, Union
 
@@ -22,9 +23,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade():
     # Drop legacy tables we no longer want to use.
     # Order matters: drop link tables before datafile.
-    op.drop_table("dataset_version_file_link")
-    op.drop_table("dataset_file_link")
-    op.drop_table("datafile")
+    op.execute("DROP TABLE IF EXISTS dataset_version_file_link")
+    op.execute("DROP TABLE IF EXISTS dataset_file_link")
+    op.execute("DROP TABLE IF EXISTS datafile")
 
 
 def downgrade():

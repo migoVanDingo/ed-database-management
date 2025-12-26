@@ -5,6 +5,7 @@ Revises: d359d2325573
 Create Date: 2025-12-24 10:17:10.398064
 
 """
+# Idempotent backfill to avoid errors when tables are missing.
 
 from typing import Sequence, Union
 
@@ -19,18 +20,20 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-from alembic import op
-import sqlalchemy as sa
-
-# revision identifiers
-revision = "backfill_dataset_metrics"
-down_revision = "create_dataset_metrics_table"  # set to your actual revision id
-branch_labels = None
-depends_on = None
-
-
 def upgrade():
     conn = op.get_bind()
+
+    table_exists = conn.execute(
+        sa.text(
+            """
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_name = 'datasets'
+            """
+        )
+    ).first()
+    if not table_exists:
+        return
 
     dataset_ids = conn.execute(sa.text("SELECT id FROM datasets")).fetchall()
 

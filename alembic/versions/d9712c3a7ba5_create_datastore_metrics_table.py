@@ -5,6 +5,7 @@ Revises: c644bb92027d
 Create Date: 2025-12-24 10:10:13.981760
 
 """
+# Idempotent table creation to avoid DuplicateTable errors.
 
 from typing import Sequence, Union
 
@@ -23,34 +24,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    op.create_table(
-        "datastore_metrics",
-        sa.Column(
-            "datastore_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("datastores.id", ondelete="CASCADE"),
-            primary_key=True,
-        ),
-        sa.Column("file_count", sa.BigInteger(), nullable=False, server_default="0"),
-        sa.Column("total_bytes", sa.BigInteger(), nullable=False, server_default="0"),
-        sa.Column("dataset_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("project_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("likes", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("shares", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column(
-            "created_at",
-            sa.TIMESTAMP(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
-        sa.Column(
-            "updated_at",
-            sa.TIMESTAMP(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name = 'datastore_metrics'
+            ) THEN
+                CREATE TABLE datastore_metrics (
+                    datastore_id UUID NOT NULL,
+                    file_count BIGINT DEFAULT '0' NOT NULL,
+                    total_bytes BIGINT DEFAULT '0' NOT NULL,
+                    dataset_count INTEGER DEFAULT '0' NOT NULL,
+                    project_count INTEGER DEFAULT '0' NOT NULL,
+                    likes INTEGER DEFAULT '0' NOT NULL,
+                    shares INTEGER DEFAULT '0' NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    PRIMARY KEY (datastore_id),
+                    FOREIGN KEY(datastore_id) REFERENCES datastores (id) ON DELETE CASCADE
+                );
+            END IF;
+        END$$;
+        """
     )
 
 
 def downgrade():
-    op.drop_table("datastore_metrics")
+    op.execute("DROP TABLE IF EXISTS datastore_metrics")

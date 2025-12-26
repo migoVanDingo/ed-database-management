@@ -5,6 +5,7 @@ Revises:
 Create Date: 2025-08-03 10:48:14.017600
 
 """
+# Idempotent trigger/function creation to avoid DuplicateObject errors.
 
 from typing import Sequence, Union
 
@@ -53,12 +54,19 @@ def upgrade():
             RETURN NULL;
         END;
         $$ LANGUAGE plpgsql;
-
+        """
+    )
+    op.execute(
+        """
+        DROP TRIGGER IF EXISTS user_notify_trigger ON "user";
         CREATE TRIGGER user_notify_trigger
         AFTER INSERT OR UPDATE OR DELETE ON "user"
         FOR EACH ROW
         EXECUTE FUNCTION notify_user_change();
-
+        """
+    )
+    op.execute(
+        """
         CREATE OR REPLACE FUNCTION notify_user_verified() RETURNS trigger AS $$
         DECLARE
             payload JSON;
@@ -78,13 +86,17 @@ def upgrade():
             RETURN NULL;
         END;
         $$ LANGUAGE plpgsql;
-
+        """
+    )
+    op.execute(
+        """
+        DROP TRIGGER IF EXISTS user_verified_notify_trigger ON "user";
         CREATE TRIGGER user_verified_notify_trigger
         AFTER UPDATE OF is_verified ON "user"
         FOR EACH ROW
         WHEN (OLD.is_verified IS DISTINCT FROM NEW.is_verified AND NEW.is_verified = TRUE)
         EXECUTE FUNCTION notify_user_verified();
-    """
+        """
     )
 
 

@@ -5,6 +5,7 @@ Revises: f3ab62a67516
 Create Date: 2025-12-07 08:02:49.457732
 
 """
+# Idempotent column creation to avoid DuplicateColumn errors.
 
 from typing import Sequence, Union
 
@@ -20,19 +21,39 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    op.add_column(
-        "datastore",
-        sa.Column(
-            "capacity_bytes",
-            sa.BigInteger(),
-            nullable=True,
-            server_default=sa.text("10737418240"),  # 10 GB
-        ),
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'datastore'
+                  AND column_name = 'capacity_bytes'
+            ) THEN
+                ALTER TABLE datastore
+                ADD COLUMN capacity_bytes BIGINT DEFAULT 10737418240;
+            END IF;
+        END$$;
+        """
     )
 
-    # If you want existing rows to be explicitly set (optional but nice):
     op.execute(
-        "UPDATE datastore SET capacity_bytes = 10737418240 WHERE capacity_bytes IS NULL"
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'datastore'
+                  AND column_name = 'capacity_bytes'
+            ) THEN
+                UPDATE datastore
+                SET capacity_bytes = 10737418240
+                WHERE capacity_bytes IS NULL;
+            END IF;
+        END$$;
+        """
     )
 
 

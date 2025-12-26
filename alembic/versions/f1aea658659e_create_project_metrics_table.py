@@ -5,6 +5,7 @@ Revises: d8d86a9b8020
 Create Date: 2025-12-24 10:18:00.039785
 
 """
+# Idempotent table creation to avoid DuplicateTable errors.
 
 from typing import Sequence, Union
 
@@ -20,41 +21,32 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    op.create_table(
-        "project_metrics",
-        sa.Column(
-            "project_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("projects.id", ondelete="CASCADE"),
-            primary_key=True,
-        ),
-        # Core counts
-        sa.Column("dataset_count", sa.Integer(), nullable=False, server_default="0"),
-        # Optional rollups (keep now; you can decide later whether to actively maintain these)
-        sa.Column("file_count", sa.BigInteger(), nullable=False, server_default="0"),
-        sa.Column("total_bytes", sa.BigInteger(), nullable=False, server_default="0"),
-        # 👇 collaborator stats
-        sa.Column(
-            "collaborator_count", sa.Integer(), nullable=False, server_default="0"
-        ),
-        # Social
-        sa.Column("likes", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("shares", sa.Integer(), nullable=False, server_default="0"),
-        # Timestamps
-        sa.Column(
-            "created_at",
-            sa.TIMESTAMP(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
-        sa.Column(
-            "updated_at",
-            sa.TIMESTAMP(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_name = 'project_metrics'
+            ) THEN
+                CREATE TABLE project_metrics (
+                    project_id UUID NOT NULL,
+                    dataset_count INTEGER DEFAULT '0' NOT NULL,
+                    file_count BIGINT DEFAULT '0' NOT NULL,
+                    total_bytes BIGINT DEFAULT '0' NOT NULL,
+                    collaborator_count INTEGER DEFAULT '0' NOT NULL,
+                    likes INTEGER DEFAULT '0' NOT NULL,
+                    shares INTEGER DEFAULT '0' NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    PRIMARY KEY (project_id),
+                    FOREIGN KEY(project_id) REFERENCES projects (id) ON DELETE CASCADE
+                );
+            END IF;
+        END$$;
+        """
     )
 
 
 def downgrade():
-    op.drop_table("project_metrics")
+    op.execute("DROP TABLE IF EXISTS project_metrics")

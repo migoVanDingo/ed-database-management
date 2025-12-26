@@ -5,6 +5,7 @@ Revises: f1aea658659e
 Create Date: 2025-12-24 10:18:27.617341
 
 """
+# Idempotent backfill to avoid errors when tables are missing.
 
 from typing import Sequence, Union
 
@@ -21,6 +22,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade():
     conn = op.get_bind()
+
+    table_exists = conn.execute(
+        sa.text(
+            """
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_name = 'projects'
+            """
+        )
+    ).first()
+    if not table_exists:
+        return
 
     project_ids = conn.execute(sa.text("SELECT id FROM projects")).fetchall()
 

@@ -5,6 +5,7 @@ Revises: 67f7c0b6a3f8
 Create Date: 2025-12-09 19:08:10.051416
 
 """
+# Idempotent trigger/function creation to avoid DuplicateObject errors.
 
 from typing import Sequence, Union
 

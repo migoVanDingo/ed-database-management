@@ -5,6 +5,7 @@ Revises: 516e6e9acdc5
 Create Date: 2025-12-23 11:50:27.182646
 
 """
+# Idempotent column/constraint creation to avoid DuplicateColumn errors.
 
 from typing import Sequence, Union
 
@@ -69,28 +70,57 @@ def upgrade():
     # ─────────────────────────────────────────
     # Add label_ontology_id column to dataset
     # ─────────────────────────────────────────
-    op.add_column(
-        "dataset",
-        sa.Column("label_ontology_id", sa.String(), nullable=True),
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_name = 'dataset'
+                  AND column_name = 'label_ontology_id'
+            ) THEN
+                ALTER TABLE dataset ADD COLUMN label_ontology_id VARCHAR;
+            END IF;
+        END$$;
+        """
     )
 
-    op.create_foreign_key(
-        "fk_dataset_label_ontology",
-        "dataset",
-        "label_ontology",
-        ["label_ontology_id"],
-        ["id"],
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM information_schema.table_constraints tc
+                WHERE tc.constraint_type = 'FOREIGN KEY'
+                  AND tc.constraint_name = 'fk_dataset_label_ontology'
+                  AND tc.table_name = 'dataset'
+            ) THEN
+                ALTER TABLE dataset
+                ADD CONSTRAINT fk_dataset_label_ontology
+                FOREIGN KEY (label_ontology_id)
+                REFERENCES label_ontology (id);
+            END IF;
+        END$$;
+        """
     )
 
 
 def downgrade():
     # Drop FK + column on dataset
-    op.drop_constraint(
-        "fk_dataset_label_ontology",
-        "dataset",
-        type_="foreignkey",
+    op.execute(
+        """
+        ALTER TABLE dataset
+        DROP CONSTRAINT IF EXISTS fk_dataset_label_ontology;
+        """
     )
-    op.drop_column("dataset", "label_ontology_id")
+    op.execute(
+        """
+        ALTER TABLE dataset
+        DROP COLUMN IF EXISTS label_ontology_id;
+        """
+    )
 
     # Drop label_ontology table + index
     op.drop_index(

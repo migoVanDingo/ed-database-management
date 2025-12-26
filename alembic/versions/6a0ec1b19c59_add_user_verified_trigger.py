@@ -5,6 +5,7 @@ Revises: 39f67eb944ff
 Create Date: 2025-11-07 21:02:46.113338
 
 """
+# Idempotent trigger/function creation to avoid DuplicateObject errors.
 from typing import Sequence, Union
 
 from alembic import op
@@ -41,7 +42,11 @@ def upgrade() -> None:
             RETURN NULL;
         END;
         $$ LANGUAGE plpgsql;
-
+        """
+    )
+    op.execute(
+        """
+        DROP TRIGGER IF EXISTS user_verified_notify_trigger ON "user";
         CREATE TRIGGER user_verified_notify_trigger
         AFTER UPDATE OF is_verified ON "user"
         FOR EACH ROW
@@ -56,6 +61,5 @@ def downgrade() -> None:
     op.execute(
         """
         DROP TRIGGER IF EXISTS user_verified_notify_trigger ON "user";
-        DROP FUNCTION IF EXISTS notify_user_verified();
         """
     )
