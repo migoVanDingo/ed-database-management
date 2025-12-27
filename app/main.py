@@ -14,6 +14,8 @@ from app.listeners.upload_session_trigger_listener import (
     listen_to_upload_session_changes,
 )
 from app.listeners.file_listener import listen_to_file_status_changes
+from app.listeners.outbox_poller import listen_to_outbox_events
+from app.listeners.dataset_trigger_listener import listen_to_dataset_files_changes
 
 settings = get_settings()  # single source of truth
 
@@ -31,11 +33,19 @@ async def lifespan(app: FastAPI):
 
     # Start PG -> Redis listeners
     app.state.user_listener_task = asyncio.create_task(listen_to_user_changes())
+    app.state.outbox_listener_task = asyncio.create_task(
+        listen_to_outbox_events(
+            entity_type_filter="dataset"
+        )  # start with datasets only
+    )
     app.state.upload_session_listener_task = asyncio.create_task(
         listen_to_upload_session_changes()
     )
     app.state.file_status_listener_task = asyncio.create_task(
         listen_to_file_status_changes()
+    )
+    app.state.dataset_listener_task = asyncio.create_task(
+        listen_to_dataset_files_changes()
     )
 
     # Optional debug subscriber
