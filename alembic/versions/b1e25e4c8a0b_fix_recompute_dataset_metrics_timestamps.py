@@ -29,6 +29,11 @@ def upgrade() -> None:
             dataset_id,
             file_count,
             total_bytes,
+            project_usage_count,
+            version_count,
+            collaborator_count,
+            likes,
+            shares,
             created_at,
             updated_at
           )
@@ -36,6 +41,11 @@ def upgrade() -> None:
             p_dataset_id,
             COUNT(DISTINCT dfl.file_id) AS file_count,
             COALESCE(SUM(f.size), 0) AS total_bytes,
+            0 AS project_usage_count,
+            0 AS version_count,
+            0 AS collaborator_count,
+            0 AS likes,
+            0 AS shares,
             NOW() AS created_at,
             NOW() AS updated_at
           FROM dataset_file_link dfl
